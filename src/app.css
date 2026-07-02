@@ -286,3 +286,28 @@ tbody tr:hover { background: var(--bg-hover); }
   border-radius: 3px;
   background: var(--bg-hover);
 }
+
+/* Settings popover */
+.settings-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  width: 340px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+.settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.settings-label .input { width: 100%; }

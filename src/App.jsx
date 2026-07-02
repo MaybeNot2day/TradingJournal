@@ -142,6 +142,8 @@ export default function App() {
   const [walletInput, setWalletInput] = useState(() => loadStoredWallet() || DEFAULT_WALLET);
   const [qfexPubInput, setQfexPubInput] = useState(() => loadStoredQfexCreds()?.publicKey || "");
   const [qfexSecInput, setQfexSecInput] = useState(() => loadStoredQfexCreds()?.secretKey || "");
+  // Settings popover: open automatically only when nothing is configured yet.
+  const [showSettings, setShowSettings] = useState(() => !(loadStoredWallet() || DEFAULT_WALLET));
   const pollRef = useRef(null);
   const lastFillTimeRef = useRef(START_TIME);
   const lastQfexFillTimeRef = useRef(START_TIME);
@@ -349,22 +351,46 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="logo">Trading Journal <span>· trade.xyz</span></div>
-        <input className="input" style={{ width: 340 }}
-          value={walletInput}
-          onChange={e => setWalletInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleConnect()}
-          placeholder="0x... wallet address" />
-        <input className="input" style={{ width: 165 }}
-          value={qfexPubInput}
-          onChange={e => setQfexPubInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleConnect()}
-          placeholder="QFEX public key" />
-        <input className="input" style={{ width: 165 }} type="password"
-          value={qfexSecInput}
-          onChange={e => setQfexSecInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleConnect()}
-          placeholder="QFEX secret key" />
-        <button className="btn primary" onClick={handleConnect}>Connect</button>
+        {walletInput && (
+          <span className="dim mono" style={{ fontSize: 11 }}>
+            {walletInput.slice(0, 6)}…{walletInput.slice(-4)}
+          </span>
+        )}
+        <div style={{ position: "relative" }}>
+          <button className={`btn ghost ${showSettings ? "active" : ""}`}
+            onClick={() => setShowSettings(s => !s)} title="Connection settings">
+            ⚙ Settings
+          </button>
+          {showSettings && (
+            <div className="settings-pop">
+              <label className="settings-label">Hyperliquid wallet
+                <input className="input"
+                  value={walletInput}
+                  onChange={e => setWalletInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (setShowSettings(false), handleConnect())}
+                  placeholder="0x... wallet address" />
+              </label>
+              <label className="settings-label">QFEX public key
+                <input className="input"
+                  value={qfexPubInput}
+                  onChange={e => setQfexPubInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (setShowSettings(false), handleConnect())}
+                  placeholder="optional" />
+              </label>
+              <label className="settings-label">QFEX secret key
+                <input className="input" type="password"
+                  value={qfexSecInput}
+                  onChange={e => setQfexSecInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (setShowSettings(false), handleConnect())}
+                  placeholder="optional" />
+              </label>
+              <button className="btn primary" style={{ width: "100%" }}
+                onClick={() => { setShowSettings(false); handleConnect(); }}>
+                Connect
+              </button>
+            </div>
+          )}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
           <span className={`status-dot ${state.status}`} />
           <span className="dim" style={{ fontSize: 12 }}>
