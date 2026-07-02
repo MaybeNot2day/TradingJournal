@@ -1,6 +1,7 @@
 // QFEX proxy. api.qfex.com sits behind Cloudflare, which 403s (error 1010)
-// requests that lack browser-like headers — including Vercel's static
-// rewrites. This function forwards auth headers and a browser UA.
+// requests lacking browser-like headers — including Vercel static rewrites.
+// This function forwards the auth headers and a browser UA.
+// Routed via vercel.json: /qfex/:path* -> /api/qfex?qpath=:path*
 
 const FORWARD_HEADERS = [
   "x-qfex-public-key",
@@ -11,12 +12,9 @@ const FORWARD_HEADERS = [
 ];
 
 export default async function handler(req, res) {
-  const segments = req.query.path || [];
-  const path = Array.isArray(segments) ? segments.join("/") : segments;
-  const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-  // Strip Vercel's injected `path` param from the query string
-  const params = new URLSearchParams(qs.slice(1));
-  params.delete("path");
+  const params = new URLSearchParams(req.url.includes("?") ? req.url.slice(req.url.indexOf("?") + 1) : "");
+  const path = params.get("qpath") || "";
+  params.delete("qpath");
   const search = params.toString();
 
   const headers = {
