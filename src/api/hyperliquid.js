@@ -55,6 +55,11 @@ export async function fetchFunding(wallet) {
   return apiPost({ type: "userFunding", user: wallet, startTime: START_TIME });
 }
 
+// Merge main-dex and xyz builder-dex mids; xyz keys arrive prefixed ("xyz:SPCX").
 export async function fetchAllMids() {
-  return apiPost({ type: "allMids" });
+  const [main, xyz] = await Promise.all([
+    apiPost({ type: "allMids" }),
+    apiPost({ type: "allMids", dex: "xyz" }).catch(() => null),
+  ]);
+  return { ...main, ...(xyz || {}) };
 }

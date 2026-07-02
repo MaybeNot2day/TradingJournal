@@ -29,7 +29,10 @@ export default function Positions({ clearinghouseState, qfexState, allMids, trad
       });
     }
 
-    for (const p of qfexState?.positions || []) {
+    const qfexPositions = qfexState?.positions || [];
+    const qfexEquity = qfexState?.equity ?? 0;
+    const qfexTotalMM = qfexPositions.reduce((s, p) => s + (p.maintenance_margin ?? 0), 0);
+    for (const p of qfexPositions) {
       const szi = p.position ?? 0; // signed
       const entryPx = p.average_price ?? 0;
       const upnl = p.unrealised_pnl ?? 0;
@@ -37,6 +40,19 @@ export default function Positions({ clearinghouseState, qfexState, allMids, trad
       // upnl = (mark - avgEntry) * signedSize  =>  mark = avgEntry + upnl/signedSize
       const markPx = szi !== 0 ? entryPx + upnl / szi : 0;
       const im = p.initial_margin ?? 0;
+      // Liquidation estimate. QFEX is cross-margined and liquidates when
+      // Account Equity < Maintenance Margin. Holding other positions' MM
+      // fixed, solve for p:  equity + szi*(p - mark) = mmOther + r*|szi|*p
+      // where r = mm/( |szi|*mark ) is this symbol's maintenance rate.
+      let liqPx = 0;
+      const mm = p.maintenance_margin ?? 0;
+      if (szi !== 0 && markPx > 0 && mm > 0) {
+        const r = mm / (Math.abs(szi) * markPx);
+        const mmOther = qfexTotalMM - mm;
+        const denom = r * Math.abs(szi) - szi;
+        const px = (qfexEquity - szi * markPx - mmOther) / denom;
+        liqPx = px > 0 ? px : 0; // <=0 means equity covers any move down to zero
+      }
       rows.push({
         venue: QFEX_VENUE,
         coin: p.symbol,
@@ -46,7 +62,8 @@ export default function Positions({ clearinghouseState, qfexState, allMids, trad
         unrealizedPnl: upnl,
         roe: im > 0 ? (upnl / im) * 100 : null,
         leverage: p.leverage ?? null,
-        liqPx: 0, // not exposed by /user/positions
+        liqPx,
+        liqEstimated: true,
       });
     }
     return rows;
@@ -98,7 +115,9 @@ export default function Positions({ clearinghouseState, qfexState, allMids, trad
                     {p.roe !== null ? fmt.pct(p.roe) : "—"}
                   </td>
                   <td className="mono">{p.leverage !== null ? `${p.leverage}×` : "—"}</td>
-                  <td className="mono dim">{p.liqPx > 0 ? `$${p.liqPx.toFixed(4)}` : "—"}</td>
+                  <td className="mono dim" title={p.liqEstimated ? "Estimated from cross-margin equity vs maintenance margin" : undefined}>
+                    {p.liqPx > 0 ? `${p.liqEstimated ? "≈" : ""}$${p.liqPx.toFixed(4)}` : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>
