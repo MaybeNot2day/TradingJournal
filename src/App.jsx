@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useReducer, useCallback, useRef } from "react";
 import {
-  DEFAULT_WALLET, START_TIME, POLL_INTERVAL_FILLS,
+  DEFAULT_WALLET, DEFAULT_QFEX_PUBLIC, DEFAULT_QFEX_SECRET,
+  START_TIME, POLL_INTERVAL_FILLS,
   QFEX_LS_PUBLIC, QFEX_LS_SECRET, WALLET_LS_KEY,
 } from "./constants.js";
 import {
@@ -81,12 +82,18 @@ function loadStoredWallet() {
   try { return localStorage.getItem(WALLET_LS_KEY) || ""; } catch { return ""; }
 }
 
+// Stored creds win; .env values are the fallback so keys never need re-entering.
 function loadStoredQfexCreds() {
+  let publicKey = "", secretKey = "";
   try {
-    const publicKey = localStorage.getItem(QFEX_LS_PUBLIC) || "";
-    const secretKey = localStorage.getItem(QFEX_LS_SECRET) || "";
-    return publicKey && secretKey ? { publicKey, secretKey } : null;
-  } catch { return null; }
+    publicKey = localStorage.getItem(QFEX_LS_PUBLIC) || "";
+    secretKey = localStorage.getItem(QFEX_LS_SECRET) || "";
+  } catch { /* private mode */ }
+  if (!publicKey || !secretKey) {
+    publicKey = DEFAULT_QFEX_PUBLIC;
+    secretKey = DEFAULT_QFEX_SECRET;
+  }
+  return publicKey && secretKey ? { publicKey, secretKey } : null;
 }
 
 function Sidebar({ view, setView, metrics }) {
@@ -133,8 +140,8 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [view, setView] = useState("overview");
   const [walletInput, setWalletInput] = useState(() => loadStoredWallet() || DEFAULT_WALLET);
-  const [qfexPubInput, setQfexPubInput] = useState(() => { try { return localStorage.getItem(QFEX_LS_PUBLIC) || ""; } catch { return ""; } });
-  const [qfexSecInput, setQfexSecInput] = useState(() => { try { return localStorage.getItem(QFEX_LS_SECRET) || ""; } catch { return ""; } });
+  const [qfexPubInput, setQfexPubInput] = useState(() => loadStoredQfexCreds()?.publicKey || "");
+  const [qfexSecInput, setQfexSecInput] = useState(() => loadStoredQfexCreds()?.secretKey || "");
   const pollRef = useRef(null);
   const lastFillTimeRef = useRef(START_TIME);
   const lastQfexFillTimeRef = useRef(START_TIME);

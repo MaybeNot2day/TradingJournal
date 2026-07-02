@@ -1,4 +1,6 @@
 export const DEFAULT_WALLET = import.meta.env.VITE_WALLET_ADDRESS || "";
+export const DEFAULT_QFEX_PUBLIC = import.meta.env.VITE_QFEX_PUBLIC_KEY || "";
+export const DEFAULT_QFEX_SECRET = import.meta.env.VITE_QFEX_SECRET_KEY || "";
 export const START_TIME = 1772409600000; // 2 March 2026
 export const HL_API_URL = "https://api.hyperliquid.xyz/info";
 export const POLL_INTERVAL_FILLS = 10000;
