@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/qfex/:path*", "destination": "https://api.qfex.com/:path*" }
+    { "source": "/qfex/:path*", "destination": "/api/qfex/:path*" }
   ]
 }
