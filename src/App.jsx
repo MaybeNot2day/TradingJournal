@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useReducer, useCallback, useRef } from "react";
 import {
   DEFAULT_WALLET, START_TIME, POLL_INTERVAL_FILLS,
-  QFEX_LS_PUBLIC, QFEX_LS_SECRET,
+  QFEX_LS_PUBLIC, QFEX_LS_SECRET, WALLET_LS_KEY,
 } from "./constants.js";
 import {
   fetchAllFills, fetchClearinghouseState, fetchFunding, fetchAllMids, hlAccountTotals,
@@ -77,6 +77,10 @@ function reducer(state, action) {
   }
 }
 
+function loadStoredWallet() {
+  try { return localStorage.getItem(WALLET_LS_KEY) || ""; } catch { return ""; }
+}
+
 function loadStoredQfexCreds() {
   try {
     const publicKey = localStorage.getItem(QFEX_LS_PUBLIC) || "";
@@ -128,7 +132,7 @@ function Sidebar({ view, setView, metrics }) {
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [view, setView] = useState("overview");
-  const [walletInput, setWalletInput] = useState(DEFAULT_WALLET);
+  const [walletInput, setWalletInput] = useState(() => loadStoredWallet() || DEFAULT_WALLET);
   const [qfexPubInput, setQfexPubInput] = useState(() => { try { return localStorage.getItem(QFEX_LS_PUBLIC) || ""; } catch { return ""; } });
   const [qfexSecInput, setQfexSecInput] = useState(() => { try { return localStorage.getItem(QFEX_LS_SECRET) || ""; } catch { return ""; } });
   const pollRef = useRef(null);
@@ -279,6 +283,7 @@ export default function App() {
     const sec = qfexSecInput.trim();
     const creds = pub && sec ? { publicKey: pub, secretKey: sec } : null;
     try {
+      localStorage.setItem(WALLET_LS_KEY, wallet);
       if (creds) {
         localStorage.setItem(QFEX_LS_PUBLIC, pub);
         localStorage.setItem(QFEX_LS_SECRET, sec);
@@ -295,11 +300,15 @@ export default function App() {
   // Keep stateRef current
   useEffect(() => { stateRef.current = state; }, [state]);
 
-  // Auto-connect on mount with stored QFEX creds
+  // Auto-connect on mount with stored wallet + QFEX creds
   useEffect(() => {
     const creds = loadStoredQfexCreds();
     if (creds) dispatch({ type: "SET_QFEX_CREDS", creds });
-    if (DEFAULT_WALLET) loadData(DEFAULT_WALLET, creds);
+    const wallet = loadStoredWallet() || DEFAULT_WALLET;
+    if (wallet) {
+      dispatch({ type: "SET_WALLET", wallet });
+      loadData(wallet, creds);
+    }
   }, []);
 
   if (state.status === "loading") {

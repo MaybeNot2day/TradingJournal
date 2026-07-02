@@ -11,3 +11,4 @@ export const QFEX_VENUE = "QFEX";
 export const HL_VENUE = "HL";
 export const QFEX_LS_PUBLIC = "qfex_public_key";
 export const QFEX_LS_SECRET = "qfex_secret_key";
+export const WALLET_LS_KEY = "hl_wallet_address";
